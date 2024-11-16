@@ -1,0 +1,38 @@
+{*THIS IS SOME }{x212121}{* TEST OUTPUT}{13}
+{ 34}
+{147} # CLR           0x93
+{ 19} # HOME          0x13
+{145} # UP            0x90
+{ 17} # DOWN          0x11
+{157} # LEFT          0x9D
+{ 29} # RIGHT         0x1D
+{ 18} # RVS           0x12
+{146} # RVS OFF       0x92
+{144} # BLK           0x90
+{  5} # WHT           0x05
+{ 28} # RED           0x1C
+{159} # CYN           0x9F
+{156} # PUR           0x9B
+{ 30} # GRN           0x1E
+{ 31} # BLU           0x1F
+{158} # YEL           0x9E
+{129} # ORG     C 1   0x81
+{149} # BRN     C 2   0x95
+{150} # PNK     C 3   0x96
+{151} # DRK GRY C 4   0x97
+{152} # MED GRY C 5   0x98
+{153} # LIG GRN C 6   0x99
+{154} # LIG BLU C 7   0x9A
+{155} # LIG GRY C 8   0x9B
+{133} # F1            0x85
+{137} # F2 {SHIFT F1} 0x89
+{134} # F3            0x86
+{138} # F4 {SHIFT F3} 0x8A
+{135} # F5            0x87
+{139} # F6 {SHIFT F5} 0x8B
+{136} # F7            0x88
+{140} # F8 {SHIFT F7} 0x8C
+{ 20} # DEL           0x14
+{148} # INS           0x94
+{ 34}{13}
+{x41 41 }{13}
