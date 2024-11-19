@@ -104,9 +104,6 @@ class Printer:
         self.save_button = tk.Button(self.control_frame, text ="Save Output", command = self.saveCallBack)
         self.save_button.place(x=300,y=-5)
 
-        self.ui_button = tk.Button(self.control_frame, text ="UI", command = self.ui)
-        self.ui_button.place(x=250,y=-5)
-
         self.label = ttk.Label(self.root, text = "")
         self.label.place(x=425,y=5)
 
@@ -170,29 +167,6 @@ class Printer:
         self.root.maxsize((WIDTH*SIZE)+25,2000)
 
         self.child_widgets(WIDTH, HEIGHT, SIZE, OUTPUT_SIZE)
-
-    def ui(self):
-
-        global WIDTH, HEIGHT, SIZE, OUTPUT_SIZE
-
-        """
-        title_bar_height = self.root.winfo_rooty() - self.root.winfo_y()
-        outer_window_height = self.root.winfo_height() + title_bar_height        
-
-        print(title_bar_height, outer_window_height)
-        """
-
-        WIDTH = WIDTH * 2
-        HEIGHT = HEIGHT * 2
-        #SIZE = SIZE * 2
-        #OUTPUT_SIZE = OUTPUT_SIZE * 2
-
-        x = self.root.winfo_x() - 12
-        y = self.root.winfo_y() - 90
-        self.root.maxsize((WIDTH*SIZE)+25,2000)        
-        self.root.geometry("{width}x{height}+{x}+{y}".format(width=(WIDTH*SIZE*2)+25,height=MIN_Y, x=x, y=y  ))
-        pass
-
 
     # Clear the canvas and image
     def clear_canvas(self):
