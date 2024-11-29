@@ -75,6 +75,7 @@ class Printer:
         self.pos1        = -1
         self.pos2        = -1
         self.esc         = False
+        self.esc_esc     = False
         self.sub         = False
         self.repeat      = -1
         self.quote       = False
@@ -320,6 +321,11 @@ class Printer:
             #if ch != FF:
             self.page_data[self.page_current].append(ch)
 
+        if self.esc:
+            if ch == ESC:
+                self.esc_esc = True
+                self.esc = False
+
         if self.sub:
             # If we have not read the repeat yet
             if self.repeat == -1:
@@ -376,7 +382,7 @@ class Printer:
                     self.pos2 = ch
 
                     #if we are in escape mode, position by dot
-                    if self.esc == True:
+                    if self.esc_esc == True:
                         p = self.pos2 + ((self.pos1 & 1) * 512)
                         if p < 479:
                             self.x = SIZE * p
@@ -391,17 +397,20 @@ class Printer:
                     self.pos1 = -1
                     self.pos2 = -1
                     self.esc = False
+                    self.esc_esc = False
             return
 
         # If we are in escape mode and the character is one of 
         # the secondary addresses, set the font set
-        if self.esc == True and (ch == 0 or ch == 7):
-            self.secondary_address = ch
-            if self.secondary_address == self.SEC_ADDR_GRAPHIC:
-                self.font_set = graphic_font
-            else:
-                self.font_set = business_font
-            return
+        if self.esc == True:
+            self.esc = False
+            if ch == 0 or ch == 7:
+                self.secondary_address = ch
+                if self.secondary_address == self.SEC_ADDR_GRAPHIC:
+                    self.font_set = graphic_font
+                else:
+                    self.font_set = business_font
+                return
 
         # if the character is in the font
         if ch in self.font_set:
