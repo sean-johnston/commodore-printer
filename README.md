@@ -48,3 +48,5 @@ it on the serial port on the destination computer.
 
 Refer to this repository, for more details about the hardware and the software
 
+I have included a modified version of the code, to work correctly with the printer software
+
