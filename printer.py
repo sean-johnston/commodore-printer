@@ -13,84 +13,72 @@ import platform
 
 from pynput.keyboard import Key, Controller
 
-# Get the font data
-from fonts import graphic_font
-from fonts import business_font
-from fonts import control_character
+from printers.mps801 import mps801
+from printers.mps802 import mps802
+from printers.vic1520 import vic1520
 
-# Constant Definitions
+from printers.printer_constants import *
 
-LPI6        = 10.5 # Normal spacing mode
-LPI9        = 7    # Graphic spacing
-
-NORMAL_WIDTH = 1
-DOUBLE_WIDTH = 2
-
-FF          = 12   # Formfeed
-NL          = 10   # Linefeed (New Line)
-CR          = 13   # Carriage return 
-BS          = 8    # Graphics on
-SO          = 14   # Double width character mode
-SI          = 15   # Standard character mode
-POS         = 16   # Print start position addressing
-ESC         = 27   # When followed by the POS code, start position of dot address
-SUB         = 26   # Repeat graphic select command
-CURSOR_UP   = 145  # Cursor up mode
-CURSOR_DOWN = 17   # Cursor down mode
-RVS_ON      = 18   # Reverse on
-RVS_OFF     = 146  # Revers off
-QUOTE       = 34
-
-WIDTH       = 480  # Width of page
-HEIGHT      = 693  # Length of page
-SIZE        = 2    # Display Multipler
-
-OUTPUT_SIZE = 4      # Output Size Multiplier
-OUTPUT_MULIPLIER = 2 # Output Multplier from output size
-
-MIN_Y       = 500  # Minimum size of the frame
+DEFAULT_PRINTER = "VIC 1520"
 
 class Printer:
     def __init__(self):
-        self.x = 0
-        self.y = 0
+        self.printer_profile = None
 
         self.img = None
-
-        self.SEC_ADDR_GRAPHIC = 0
-        self.SEC_ADDR_BUSNESS = 7
-
-        self.secondary_address = self.SEC_ADDR_GRAPHIC
-        self.font_set = graphic_font
 
         self.page_current = 0
         self.page_data = []
         self.page_last = 0
 
-        self.line_space  = LPI6
-        self.char_width  = NORMAL_WIDTH
-        self.reverse     = False
-        self.graph_mode  = False
-        self.pos         = False
-        self.pos1        = -1
-        self.pos2        = -1
-        self.esc         = False
-        self.esc_esc     = False
-        self.sub         = False
-        self.repeat      = -1
-        self.quote       = False
-
-        self.create_ui()
-
         # Add buffer for the current page
         self.page_data.append(bytearray())
+        self.page_data[self.page_current].append(0)
 
         self.keyboard = Controller()
 
+        self.printer_selected = DEFAULT_PRINTER
+
+        self.create_ui()
+
+    def select_printer(self, printer):
+        if printer == 'MPS 801':
+            self.printer_profile = mps801()
+        if printer == 'MPS 802':
+            self.printer_profile = mps802()
+        if printer == 'VIC 1520':
+            self.printer_profile = vic1520()
+
+        self.printer_profile.set_parent(self)
+
+    def refresh_ui(self):
+        x = self.root.winfo_x() - 12
+        y = self.root.winfo_y() - 90
+
+        page_width = self.printer_profile.page_width
+        page_height = self.printer_profile.page_height
+        self.root.title(self.printer_select.get())
+        self.root.geometry("{width}x{height}".format(width=(page_width*SIZE)+25,height=MIN_Y, x=x, y=y))
+        self.root.resizable(False,True)
+        self.root.minsize(500,MIN_Y)
+        self.root.maxsize((page_width*SIZE)+25,2000)
+
+        # Create an image to draw the output on
+        #white = 
+        self.image = None
+        self.image = Image.new(
+            "RGB",
+            (self.printer_profile.page_width*OUTPUT_SIZE,self.printer_profile.page_height*OUTPUT_SIZE),
+            color = (255, 255, 255) # type: ignore
+        ) # type: ignore
+
+        # Load the bitmap to draw the pixel
+        self.draw = ImageDraw.Draw(self.image)
 
     def child_widgets(self, width, height, size, output_size):
         # Create the frame to contain the combobox
-        self.control_frame=tk.Frame(self.root,width=WIDTH*SIZE,height=100,padx=5,pady=5)
+        self.control_frame=tk.Frame()
+            #self.root,width=self.printer_profile.font_width*SIZE,height=100,padx=5,pady=5)
         self.control_frame.pack(expand=True, fill=tk.BOTH)
 
         # Create the combo box
@@ -131,7 +119,7 @@ class Printer:
         ) # type: ignore
 
         # Load the bitmap to draw the pixel
-        self.pixel = Image.open('printer_pixel.png')
+        self.pixel = Image.open('printers/printer_pixel.png')
         self.draw = ImageDraw.Draw(self.image)
 
         self.vbar.config(command=self.canvas.yview)
@@ -159,20 +147,27 @@ class Printer:
 
 
     def create_ui(self):
+
         # Create root window
+        self.select_printer(self.printer_selected)
+        page_width = self.printer_profile.page_width
+        page_height = self.printer_profile.page_height
         self.root = tk.Tk()
-        self.root.title("MPS801")
-        self.root.geometry("{width}x{height}".format(width=(WIDTH*SIZE)+25,height=MIN_Y))
+        self.root.title(self.printer_selected)
+        self.root.geometry("{width}x{height}".format(width=(page_width*SIZE)+25,height=MIN_Y))
         self.root.resizable(False,True)
         self.root.minsize(500,MIN_Y)
-        self.root.maxsize((WIDTH*SIZE)+25,2000)
+        self.root.maxsize((page_width*SIZE)+25,2000)
 
-        self.child_widgets(WIDTH, HEIGHT, SIZE, OUTPUT_SIZE)
+        self.printer_select = tk.StringVar()
+        self.printer_select.set(self.printer_selected)
+
+        self.child_widgets(page_width, page_height, SIZE, OUTPUT_SIZE)
 
     # Clear the canvas and image
     def clear_canvas(self):
         self.canvas.delete("all")
-        self.draw.rectangle([0, 0, WIDTH*OUTPUT_SIZE,HEIGHT*OUTPUT_SIZE], fill='white', outline=None, width=1)
+        self.draw.rectangle([0, 0, self.printer_profile.page_width*OUTPUT_SIZE,self.printer_profile.page_height*OUTPUT_SIZE], fill='white', outline=None, width=1)
 
     # Redraw the currently selected page
     def redraw_page(self):
@@ -190,16 +185,16 @@ class Printer:
         pd_len = len(pd)
 
         # Set x and y to the top of the page
-        self.x = 0
-        self.y = 0
+        self.printer_profile.x = pd[0]
+        self.printer_profile.y = 0
 
         # Process all the data for the page
-        for c in range(0,pd_len):
+        for c in range(1,pd_len):
             i = pd[c]
-            if self.graph_mode == False and i == FF:
+            if self.printer_profile.graph_mode == False and i == FF:
                 pass
             else:
-                self.chout(i, add_data=False)
+                self.printer_profile.chout(i, add_data=False)
 
 
     # Create a new page
@@ -217,68 +212,57 @@ class Printer:
         # Clear the canvas
         self.clear_canvas()
 
-        # Add data array to the jjpage
+        # Add data array to the page
         self.page_data.append(bytearray())
+        self.page_data[self.page_current].append(0)
 
         # Set the combobox to the new page
         self.page.current(self.page_current)
 
         # Set the x and y position to the top of the page
-        self.x = 0
-        self.y = 0
+        self.printer_profile.x = 0
+        self.printer_profile.y = 0
 
     # Draw a dot on the canvas and image
     def draw_dot(self, display_offset, output_offset):
 
         # Draw pixels for the display
-        self.canvas.create_rectangle(self.x, self.y+display_offset, self.x+(SIZE * self.char_width), self.y+(SIZE)+display_offset, fill='black', outline='')
+        self.canvas.create_rectangle(
+            self.printer_profile.x,
+            self.printer_profile.y+display_offset,
+            self.printer_profile.x+(SIZE * self.printer_profile.char_width),
+            self.printer_profile.y+(SIZE)+display_offset,
+            fill='black',
+            outline=''
+        )
 
         # Draw the pixels for the output
         Image.Image.paste(
             self.image,
             self.pixel,
-            (int(self.x * OUTPUT_MULIPLIER), int(self.y * OUTPUT_MULIPLIER + output_offset))
+            (int(self.printer_profile.x * OUTPUT_MULIPLIER), int(self.printer_profile.y * OUTPUT_MULIPLIER + output_offset))
         )
 
         # If it is double width, draw a second pixel
-        if self.char_width != NORMAL_WIDTH:
+        if self.printer_profile.char_width != NORMAL_WIDTH:
             Image.Image.paste(
                 self.image,
                 self.pixel,
-                (int(self.x * OUTPUT_MULIPLIER) + OUTPUT_MULIPLIER, int(self.y * OUTPUT_MULIPLIER + output_offset))
+                (int(self.printer_profile.x * OUTPUT_MULIPLIER) + OUTPUT_MULIPLIER, int(self.printer_profile.y * OUTPUT_MULIPLIER + output_offset))
             )
 
-        #self.draw.rectangle([self.x * OUTPUT_MULIPLIER, self.y * OUTPUT_MULIPLIER + output_offset, self.x * OUTPUT_MULIPLIER + (OUTPUT_SIZE * self.char_width)-1, self.y * OUTPUT_MULIPLIER +(OUTPUT_SIZE)+output_offset-1], fill='black', outline=None, width=1)
+        #self.draw.rectangle([self.printer_profile.x * OUTPUT_MULIPLIER, self.printer_profile.y * OUTPUT_MULIPLIER + output_offset, self.printer_profile.x * OUTPUT_MULIPLIER + (OUTPUT_SIZE * self.char_width)-1, self.printer_profile.y * OUTPUT_MULIPLIER +(OUTPUT_SIZE)+output_offset-1], fill='black', outline=None, width=1)
 
     # Output one vertical line of the character
     def output_byte(self, byte):
         display_offset = 0
         output_offset = 0
-        if (byte & 1 == 1): self.draw_dot(display_offset, output_offset)
+        for bit in range(0,self.printer_profile.font_height):
+            bit_value = pow(2, bit)
+            if (byte & bit_value == bit_value): self.draw_dot(display_offset, output_offset)
 
-        display_offset += SIZE
-        output_offset += OUTPUT_SIZE
-        if (byte & 2 == 2): self.draw_dot(display_offset, output_offset)
-
-        display_offset += SIZE
-        output_offset += OUTPUT_SIZE
-        if (byte & 4 == 4): self.draw_dot(display_offset, output_offset)
-
-        display_offset += SIZE
-        output_offset += OUTPUT_SIZE
-        if (byte & 8 == 8): self.draw_dot(display_offset, output_offset)
-
-        display_offset += SIZE
-        output_offset += OUTPUT_SIZE
-        if (byte & 16 == 16): self.draw_dot(display_offset, output_offset)
-
-        display_offset += SIZE
-        output_offset += OUTPUT_SIZE
-        if (byte & 32 == 32): self.draw_dot(display_offset, output_offset)
-
-        display_offset += SIZE
-        output_offset += OUTPUT_SIZE
-        if (byte & 64 == 64): self.draw_dot(display_offset, output_offset)
+            display_offset += SIZE
+            output_offset += OUTPUT_SIZE
 
     # Set the scroll position at the bottom of the output
     def set_scroll(self):
@@ -286,7 +270,7 @@ class Printer:
         w = self.canvas_frame.winfo_height()
 
         # Calculate the scrollbar percentage based on the printed line
-        scroll =((self.y)-w)/((HEIGHT*SIZE))
+        scroll =((self.printer_profile.y)-w)/((self.printer_profile.page_height*SIZE))
 
         # If the scrollbar percentage is greater than 100% set it to 100%
         # This should never happen
@@ -295,238 +279,9 @@ class Printer:
         # Set the scrollbar position
         self.canvas.yview("moveto", scroll)
 
-    # Output one charactor to the canvas and image
-    def chout(self, ch, add_data = True):
-        # If we want to append to the buffer
-        # Set to False if we are redrawing
-        if add_data:
-            # If the current page does not match the last page, 
-            # change to it
-            if self.page_current != self.page_last:
-                self.page_current = self.page_last
-                self.page.current(self.page_last)
-                self.clear_canvas()
-                self.redraw_page()
-                self.page_current = self.page_last
-                self.x = self.x_last
-                self.y = self.y_last
-
-            # If we reach the end of the page, make a
-            # new page
-            # Part of the line is at the bottom of the page
-            if self.y + 6 >= HEIGHT * SIZE:
-                self.new_page()
-
-            # Append the character if it is not a formfeed
-            #if ch != FF:
-            self.page_data[self.page_current].append(ch)
-
-        if self.esc:
-            if ch == ESC:
-                self.esc_esc = True
-                self.esc = False
-
-        if self.sub:
-            # If we have not read the repeat yet
-            if self.repeat == -1:
-
-                # Set repeat
-                self.repeat = ch
-
-                # If repeat is 0, set it to 256
-                if self.repeat == 0: self.repeat = 256
-            else:
-                # if repeat is set, turn off sub
-                self.sub = False
-
-                # Count down the repeats
-                while self.repeat > 0:
-                    # Check if we wrapped
-                    if self.x >= WIDTH * SIZE:
-                        self.x = 0
-                        self.y += (self.line_space * SIZE)
-
-                    # If we are adding to the buffer
-                    if add_data:
-                        # Check if we are at the end of the page,
-                        # and start a new page if we are
-                        # TODO: Make sub be able to extend to 
-                        # the next page
-                        if self.y >= HEIGHT * SIZE:
-                            self.new_page()
-
-                    # Output the bitmap
-                    self.chout(ch, False)
-
-                    # Decrement the repeat
-                    self.repeat -= 1
-
-                # Reset the repeat count
-                self.repeat = -1
-            return
-
-        # If we are in graphics mode, output the bitmapped byte
-        if self.graph_mode and ch & 128 == 128:
-            self.output_byte(ch - 128)
-            self.x += SIZE * self.char_width
-            return
-
-        # If we are in positional mode
-        if self.pos == True:
-            # If the first position is not set, set it
-            if self.pos1 == -1:
-                self.pos1 = ch
-            else:
-                # If the second position is not set, set it
-                if self.pos2 == -1:
-                    self.pos2 = ch
-
-                    #if we are in escape mode, position by dot
-                    if self.esc_esc == True:
-                        p = self.pos2 + ((self.pos1 & 1) * 512)
-                        if p < 479:
-                            self.x = SIZE * p
-                    # otherwise position by character
-                    else:
-                        if chr(self.pos1) >= '0' and chr(self.pos1) <= '9' and chr(self.pos2) >= '0' and chr(self.pos2) <= '9':
-                            pos_str = chr(self.pos1) + chr(self.pos2)
-                            if int(pos_str) < 80:
-                                self.x = SIZE * 6 * int(pos_str)
-                    # Reset the position value
-                    self.pos = False
-                    self.pos1 = -1
-                    self.pos2 = -1
-                    self.esc = False
-                    self.esc_esc = False
-            return
-
-        # If we are in escape mode and the character is one of 
-        # the secondary addresses, set the font set
-        if self.esc == True:
-            self.esc = False
-            if ch == 0 or ch == 7:
-                self.secondary_address = ch
-                if self.secondary_address == self.SEC_ADDR_GRAPHIC:
-                    self.font_set = graphic_font
-                else:
-                    self.font_set = business_font
-                return
-
-        # if the character is in the font
-        if ch in self.font_set:
-
-            # Toggle quote
-            if ch == QUOTE:
-                self.quote = not self.quote
-
-            # Check if we wrapped
-            if self.x >= WIDTH * SIZE:
-                self.x = 0
-                self.y += (self.line_space * SIZE)
-
-            # If we are adding to the buffer
-            if add_data:
-                # Check if we are at the end of the page,
-                # and start a new page if we are
-                if self.y >= HEIGHT * SIZE:
-                    self.new_page()
-
-            # Get the dot data of the character
-            f = self.font_set[ch]
-
-            # Print the character
-            for i in range(6):
-                byte = f[i]
-                if self.reverse: byte = byte ^ 255
-                offset = 0
-                self.output_byte(byte)
-
-                # Move the the next character position
-                self.x += SIZE * self.char_width
-
-        # If it is not a font character, it must be a control
-        # character
-        else:
-            if self.quote and ch in control_character:
-                # Print the character
-                for i in range(6):
-                    o = control_character[ch]
-                    f = self.font_set[o]
-
-                    byte = f[i]
-                    byte = byte ^ 255
-                    offset = 0
-                    self.output_byte(byte)
-
-                    # Move the the next character position
-                    self.x += SIZE * self.char_width
-
-            # Process new line and carriage return
-            if ch == NL or ch == CR:
-                # Move to beginning of next line
-                self.x = 0
-                self.y += (self.line_space * SIZE)
-
-                # Reset all the flags
-                if self.secondary_address == self.SEC_ADDR_GRAPHIC:
-                    self.font_set = graphic_font
-                else:
-                    self.font_set = business_font
-                self.reverse = False
-                # self.graph_mode = False # I don't think graphic mode gets turned of
-                self.pos = False
-                self.ese = False
-                self.quote = False
-
-            if ch == BS:          # Graphics on
-                self.graph_mode = True
-                self.line_space  = LPI9 # Change the line spacing to closer together                
-
-            if ch == SO:          # Double width character mode
-                self.char_width = DOUBLE_WIDTH
-                self.graph_mode = False
-                self.line_space  = LPI6
-
-            if ch == SI:          # Standard character mode
-                self.char_width = NORMAL_WIDTH
-                self.graph_mode = False
-                self.line_space  = LPI6
-                # TODO: Re-align the output to be an a character boundary
-
-            if ch == POS:         # Print start position addressing
-                self.pos = True
-
-            if ch == ESC:         # When followed by the POS code, start position of dot address
-                self.esc = True
-
-            if ch == SUB:         # Repeat graphic select command
-                self.sub = True
-
-            if ch == CURSOR_UP and not self.quote:   # Cursor up mode (Graphic)
-                self.font_set = graphic_font
-
-            if ch == CURSOR_DOWN and not self.quote: # Cursor down mode (Business)
-                self.font_set = business_font
-
-            if ch == RVS_ON:      # Reverse on
-                self.reverse = True
-
-            if ch == RVS_OFF:     # Revers off
-                self.reverse = False
-
-            if ch == FF:          # Form feed
-                self.new_page()
-
-        # If we are appending data, set the last x, y, and page
-        if add_data:
-            self.x_last = self.x
-            self.y_last = self.y
-            self.page_last = self.page_current
-            self.set_scroll()
-
     # Output a string
     def output_string(self, str):
-        for i in str: self.chout(ord(i))
+        for i in str: self.printer_profile.chout(ord(i))
         self.canvas.update()
 
     # Callback for the the combo box change
@@ -602,7 +357,7 @@ class Printer:
 
                 # Send the character for output
                 ch = self.ser.read(1)[0] # type: ignore
-                self.chout(ch)
+                self.printer_profile.chout(ch)
 
             # reschedule event in 20 milliseconds
             self.root.after(20, self.serial_read)
@@ -661,7 +416,7 @@ class Printer:
             # Print the output until the end of the block
             cnt = 0
             while  cnt < len(block):
-                self.chout(ord(block[cnt]))
+                self.printer_profile.chout(ord(block[cnt]))
                 cnt += 1
 
             return
@@ -680,7 +435,7 @@ class Printer:
             # Output each of the hex numbers
             for i in range(0,len(block),2):
                 value = int(block[i:i+2],16)
-                self.chout(value)
+                self.printer_profile.chout(value)
             return
 
         # If decimal character mode
@@ -697,7 +452,7 @@ class Printer:
 
             # Print the output
             for c in ch_list:
-                self.chout(int(c))
+                self.printer_profile.chout(int(c))
 
 
     # Read the data file, and process each block
@@ -796,7 +551,7 @@ class Printer:
             for pd in self.page_data:
 
                 # Iterate through the character data of the page data
-                for ch in pd:
+                for ch in pd[1:]:
 
                     # If the mode is hex, and we have over 40 characters,
                     # write out the hex data, and clear the data
@@ -866,7 +621,7 @@ class Printer:
 
                 for h in range(0,len(line),2):
                     c = int(line[h:h+2],16)
-                    self.chout(c)
+                    self.printer_profile.chout(c)
 
 
 
@@ -891,7 +646,7 @@ class Printer:
             for pd in self.page_data:
 
                 # Iterate through the character data of the page data
-                for ch in pd:
+                for ch in pd[1:]:
 
                     # Write out the hex value
                     f.write("{:02x} ".format(ch))
@@ -912,28 +667,17 @@ class Printer:
         # Add buffer for the current page
         self.page_data = []
         self.page_data.append(bytearray())
+        self.page_data[self.page_current].append(0)
 
         # Reset all the values
-        self.x = 0
-        self.y = 0
+        self.printer_profile.x = 0
+        self.printer_profile.y = 0
         self.page_current = 0
         self.x_last = 0
         self.y_last = 0
         self.page_last = 0
 
-        self.font_set = graphic_font
-
-        self.line_space  = LPI6
-        self.char_width  = NORMAL_WIDTH
-        self.reverse     = False
-        self.graph_mode  = False
-        self.pos         = False
-        self.pos1        = -1
-        self.pos2        = -1
-        self.esc         = False
-        self.sub         = False
-        self.repeat      = -1
-        self.quote       = False
+        self.printer_profile.clear_output()
 
         # Reset the combobox
         self.page['values'] = ('Page\\ 1')
@@ -1019,6 +763,12 @@ class Printer:
                 # If we have more than one serial port, to select any
                 self.ser = None
 
+    def set_printer(self):
+        self.clear_output()
+        self.select_printer(self.printer_select.get())
+        self.refresh_ui()
+        pass
+
     def create_menu(self):
 
         # Variable for the serial port
@@ -1042,6 +792,15 @@ class Printer:
         self.filemenu.add_separator()
         self.filemenu.add_command(label="Exit", command=self.root.quit)
         self.menubar.add_cascade(label="File", menu=self.filemenu)
+
+        # Printer menu
+        self.printer_menu = tk.Menu(self.menubar, tearoff=0)
+        #self.serial_menu.add_radiobutton(label=i[1], value=i[0], variable=self.serial, command=self.serial_port_change)
+
+        self.printer_menu.add_radiobutton(label="MPS 801/1525", value="MPS 801", variable=self.printer_select, command=self.set_printer)
+        self.printer_menu.add_radiobutton(label="MPS 802/1526", value="MPS 802", variable=self.printer_select, command=self.set_printer)
+        self.printer_menu.add_radiobutton(label="VIC 1520", value="VIC 1520", variable=self.printer_select, command=self.set_printer)
+        self.menubar.add_cascade(label="Printer", menu=self.printer_menu)
 
         # Serial menu
         self.serial_menu = tk.Menu(self.menubar, tearoff=0)
@@ -1093,7 +852,7 @@ class Printer:
             self.canvas.bind("<MouseWheel>", self.on_mousewheel)
 
         # Mouse wheel for Linux
-        if platform.system() == "Window":
+        if platform.system() == "Windows":
             self.canvas.bind_all("<MouseWheel>", self.on_mousewheel)
 
         # Mouse wheel for Windows
@@ -1147,7 +906,8 @@ def main(argv):
     data_file = None
     output_file = None
 
-    # Parse the command line arguments, and display the help if there is an error
+    # Parse the command line argume
+    # nts, and display the help if there is an error
     try:
         opts, args = getopt.getopt(argv,"hs:f:o:",["serial=","file=","--output"])
     except getopt.GetoptError:
@@ -1183,7 +943,10 @@ def main(argv):
             print("Directory for output file", d, "does not exist")
             exit(5)
 
+    #printer_profile = mps802()
+    #printer_profile = mps802()
     printer = Printer()
+    #printer_profile.set_parent(printer)
     printer.run(serial_port, data_file, output_file)
 
 if __name__ == "__main__":

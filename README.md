@@ -12,12 +12,13 @@ This program is written in Python 3, using Tkinter for the user interface, and w
 It currently only supports a MPS801 printer, but I have plans to expand it to include other printers that work on
 the IEC port. That includes dot matrix, plotters, and thermal printer.
 
-# Prerequisites
+## Prerequisites
 
 The following are required to run the program:
 
 * Python 3 - I have tested with version 3.9 and higher. It may work with a lower version
 * pyserial - This is required to talk to the serial port, to get data form the computer to the printer. Install it with the following command:
+
 ```
    pip3 install pyserial
 ```
@@ -25,22 +26,26 @@ The following are required to run the program:
 * tkinter - This usually come with an installation, but you may have to install it
 
 * Pillow library - This is used for manipulating images, for output to PDF. You can install this library will the following command:
+
 ```
    pip3 install pillow
 ```
+
 * pynput - This library allows you to simulate key presses. It is used for the mouse scroll wheel, for the Linux platform. You can install it with the
 following command:"
+
 ```
    pip3 install pynput
 ```
+
 * Printer interface hardware - This is the hardware that you would connect to the Commodore computer. Information about the interface is
 described below.
 
-# Printer Interface Hardware
+## Printer Interface Hardware
 
 I am using the IECDevice library from the following repository:
 
-https://github.com/dhansel/IECDevice
+<https://github.com/dhansel/IECDevice>
 
 This hardware and firmware, allows you to connect micro-controller to the the IEC port on a Commodore computer. The code installed on
 the micro-controller, is the IECBasicSerial example. This takes the data, sent out the IEC port, for device 4, and allows you to read
@@ -50,3 +55,12 @@ Refer to this repository, for more details about the hardware and the software
 
 I have included a modified version of the code, to work correctly with the printer software
 
+## Printers Supported
+
+This project will allow you to emulate the following printers:
+
+* MPS801 - Identical to the VIC-1525, with 6x7 dots and graphics
+* MPS802 - Identical to the VIC-1526, with 8×8 dots. This version adds graphics, which was not on original, but could be modded to have them.
+* VIC-1520 - This is a plotter that had 4 pens and 4 inch wide paper.
+
+This project is not complete, but has most of the functionally. The VIC-1520 has the least functionally at this point.

@@ -1,0 +1,21 @@
+{x1B 02}{*AAAAAA} {x0D 1B 3F}{x1B 01}{*ABC}     {x0D 1B 3F}
+{x1B 02}{*AAAAAA} {x0D 1B 3F}{x1B 01}{*ABCDEFG} {x0D 1B 3F}
+{x1B 02}{*$$$$}   {x0D 1B 3F}{x1B 01}{*99}      {x0D 1B 3F}
+{x1B 02}{*$9999}  {x0D 1B 3F}{x1B 01}{*99}      {x0D 1B 3F}
+{x1B 02}{*$99.99} {x0D 1B 3F}{x1B 01}{*77}      {x0D 1B 3F}
+{x1B 02}{*$99.99} {x0D 1B 3F}{x1B 01}{*-77}     {x0D 1B 3F}
+{x1B 02}{*$99.99-}{x0D 1B 3F}{x1B 01}{*-77}     {x0D 1B 3F}
+{x1B 02}{*$99.99-}{x0D 1B 3F}{x1B 01}{*77}      {x0D 1B 3F}
+{x1B 02}{*S$99.99}{x0D 1B 3F}{x1B 01}{*77}      {x0D 1B 3F}
+{x1B 02}{*ZZZZ}   {x0D 1B 3F}{x1B 01}{*77}      {x0D 1B 3F}
+{x1B 02}{*ZZ.999} {x0D 1B 3F}{x1B 01}{*77}      {x0D 1B 3F}
+{x1B 02}{*ZZZ.999}{x0D 1B 3F}{x1B 01}{*77}      {x0D 1B 3F}
+{x1B 02}{*999.99} {x0D 1B 3F}{x1B 01}{*77}      {x0D 1B 3F}
+{x1B 02}{*.99}    {x0D 1B 3F}{x1B 01}{*77}      {x0D 1B 3F}
+{x1B 02}{*.99}    {x0D 1B 3F}{x1B 01}{*.001}    {x0D 1B 3F}
+{x1B 02}{*S.999}  {x0D 1B 3F}{x1B 01}{*1.5E-02} {x0D 1B 3F}
+{x1B 02}{*Z.999-} {x0D 1B 3F}{x1B 01}{*1.5E-02} {x0D 1B 3F}
+{x1B 02}{*Z.999-} {x0D 1B 3F}{x1B 01}{*-1.5E-02}{x0D 1B 3F}
+{x1B 02}{xA0 A0 A0 A0}{*AAA  AAA    AAA} {x0D 1B 3F}{x1B 01}{*PET}{29}{*PET}{29}{*PET}{x0D 1B 3F}
+
+

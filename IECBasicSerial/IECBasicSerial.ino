@@ -99,6 +99,10 @@ void IECBasicSerial::write(byte data, bool eoi)
   Serial.write(data);
   // If it is escape, escape it. Escape is used for the secondary address, -
   if (data == 27) Serial.write(data);
+  if (eoi) {
+    Serial.write(27);
+    Serial.write(0x3f);
+  }
 }
 
 
@@ -127,10 +131,10 @@ void IECBasicSerial::secondary_address(byte secondary){
   // If was sent with the output data, send it with an escape
   // 0x60 - Output data
   // 0xE0 - On close
-  if ((secondary & 0xf0) == 0x60) {
+  //if ((secondary & 0xf0) == 0x60) {
     Serial.write(27);
     Serial.write(secondary & 0x0f);
-  }
+  //}
 }
 
 // -----------------------------------------------------------------------------
